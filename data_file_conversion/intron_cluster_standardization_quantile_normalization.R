@@ -33,25 +33,29 @@ scaled_across_indv <- t(scale(t(intron_counts)))
 norm_intron_counts <- normalize.quantiles(scaled_across_indv, copy = T)
 colnames(norm_intron_counts) <- colnames(intron_counts) # Set column names from intron_counts
 rownames(norm_intron_counts) <- rownames(intron_counts) # Set row names from intron_counts
-test <- log2(norm_intron_counts+1)
-index <- which(is.nan(test)==T)
-
 
 plot(density(norm_intron_counts[2,]))
 boxplot(norm_intron_counts[1:5000,])
-plot(density(log2(norm_intron_counts[1,]+1)))
-head(norm_intron_counts[which(is.nan(test))])
-#shapiro.test
+
+
+
 pca <- prcomp(t(norm_intron_counts))
-qqPlot(pca$x)
+
 plot(pca$x)
-qqPlot(pca$x,pch=20, cex=0.5, col="blue")
-boxplot(pca$x[,1:50], col=c('red', 'blue'), cex=0.5, pch=20, main="PCA scaled+normalized intron clusters")
-#outlier.scores <- lofactor(norm_intron_counts, k=5)
-#plot(density(outlier.scores))
+
+# Filter out known faulty samples .
+norm_intron_counts <- norm_intron_counts[,-grep("batch2_TCC.02.*",colnames(norm_intron_counts))] # -> e.g batch 2 tcc 02 only has 3 timepoints measured.
+norm_intron_counts <- norm_intron_counts[,-grep("batch[0-9]+_TCC[0-9]+.*",colnames(norm_intron_counts))] # -> norway samples have a different format, they should be removed.
+norm_intron_counts <- norm_intron_counts[,-grep("batch4_TCC.17.*", colnames(norm_intron_counts))] # -> batch 17 only has 3 itmepoints measured.
+
+#Rename samples names to match samples from snp data so we can compare which are there and which arent. still 2 samples that have to be left out.
+# names <- sapply(colnames(norm_intron_counts), gsub, pattern="\\.", replacement="_", USE.NAMES = F) 
+# names <- sapply(names, gsub, pattern="batch[0-9]_", replacement="", USE.NAMES = F)
+# names <- gsub(names, pattern="_t[0-9]+", replacement="")
+
+
 # Write scaled quantile normalized data to tsv.
-write.table(norm_intron_counts, "~/Dropbox/Erik Schutte Internship 2016/Data/Leafcutter/intron_counts_scaled_qnorm.tsv",sep="\t",
-            quote = F)
+write.table(norm_intron_counts, "~/Dropbox/Erik Schutte Internship 2016/Data/Leafcutter/intron_counts_scaled_qnorm.tsv",sep="\t")
 
 ## Intron `BED-like` file
 # Creates a file that will fulfill the role of gene.bed in MatrixEQTL analaysis.

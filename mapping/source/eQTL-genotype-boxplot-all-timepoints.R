@@ -32,13 +32,12 @@ load("~/Dropbox/Erik Schutte Internship 2016/Results/Trans/GENCODE/gsTcell_all_t
 t.all <- trans[1:10,]
 t.all <- cbind(t.all, data.frame(t.interval=c("all"),origin=c("interactive_trans")))
 
-
 ### Functions
 ## Creates boxplots for genotypes.
 # Per eQTL create a boxplot over the genotypes.
 eQTLs.df.list <- list(c.all=c.all, t.all=t.all)
 
-source("~/Dropbox/Erik Schutte Internship 2016/Code/QTL-mapping/LncRNA_Explorer_Scripts/prepare_df_eqtls.R")
+source("~/Dropbox/Erik Schutte Internship 2016/Code/QTL-Mapping/mapping/source/prepare_df_eqtls.R")
 eQTLs.df.list <- lapply(eQTLs.df.list, prepare_df_eqtls)
 
 colnames(gene.expr) <- gsub("-","_",colnames(gene.expr))
@@ -55,7 +54,7 @@ ll <- lapply(eQTLs.df.list, function(eqtl.df) {
   apply(eqtl.df, 1, function(eqtl) {
     # Set each row as a dataframe instead of a vector
     eqtl <- data.frame(t(eqtl))
-    
+    eqtl <- eQTLs.df.list[[1]][1,]
     # Position current gene in the expression file.
     gene.expression.all.samples <- gene.expr[ which( eqtl$gene == rownames(gene.expr) ), ]
 
@@ -181,9 +180,10 @@ ll <- lapply(eQTLs.df.list, function(eqtl.df) {
             xlab = "Genotype", ylab = "Gene expression", sub = names(times)[count]  )
       abline(lm(expr[time,] ~ t(geno) ), col="red" )
       count = count + 1
+      
     }
     dev.off()
-    p.value <- cor.test(t(geno), expr[grep("t0",rownames(expr)),])$p.value
+    p.value <- cor.test(t(geno), expr[time,])$p.value
 
     # p.other <- as.double(as.character(eqtl$pvalue))
     # print("Pvalue and class cor:")

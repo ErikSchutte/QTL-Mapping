@@ -1,6 +1,6 @@
 prepare_df_eqtls <- function(eqtl) {
   tmp.df <- NULL
-  print(eqtl)
+  # print(eqtl)
   genes <- eqtl$gene
   genenames <- c()
   for ( gene in genes ) {

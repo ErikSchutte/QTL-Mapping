@@ -54,7 +54,7 @@ t.180 <- cbind(t.180, data.frame(t.interval=c("_t180"),origin=c("trans")))
 eQTLs.df.list <- list(c.0=c.0, c.10=c.10, c.30=c.30, c.180=c.180,
                       t.0=t.0, t.10=t.10, t.30=t.30, t.180=t.180)
 
-source("~/Dropbox/Erik Schutte Internship 2016/Code/QTL-mapping/LncRNA_Explorer_Scripts/prepare_df_eqtls.R")
+source("~/Dropbox/Erik Schutte Internship 2016/Code/QTL-Mapping/mapping/source/prepare_df_eqtls.R")
 eQTLs.df.list <- lapply(eQTLs.df.list, prepare_df_eqtls)
 
 colnames(gene.expr) <- gsub("-","_",colnames(gene.expr))
