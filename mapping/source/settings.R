@@ -31,8 +31,8 @@ settings <- function() {
   #global("args", list("~/Dropbox/Erik/clones_CeD_genotypes_noDuplicates.Rdata","~/Dropbox/Erik/count_all_batch_times_sample.names_96Samples_noCD8_leiden.Rdata"))
   
   # Command line Test 8:
-  # global("args",list("s","~/Dropbox/Erik/clones_CeD_genotypes_noDuplicates.Rdata","~/Dropbox/Erik/expr_vst_condition_patient_rmBatch_88samples.Rdata"))
-  
+  # global("args",list("ct","~/Dropbox/Erik/clones_CeD_genotypes_noDuplicates.Rdata","~/Dropbox/Erik/expr_vst_condition_patient_rmBatch_88samples.Rdata"))
+  # global("args",list("ct","~/Dropbox/Erik/clones_CeD_genotypes_noDuplicates.Rdata","~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/gsTcell_vst_88samples.Rdata"))
   #load("~/Dropbox/Erik/clones_CeD_genotypes_noDuplicates.Rdata")
   #load("~/Dropbox/Erik/count_all_batch_times_sample.names_96Samples_noCD8_leiden.Rdata")
   #load("~/Dropbox/Erik/expr_vst_condition_patient_rmBatch_88samples.Rdata")

@@ -18,20 +18,21 @@ ctQTL <- function () {
   
   # Set gene and snp position files.
   snpspos = read.table("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/snp.txt", header = TRUE, stringsAsFactors = FALSE)
-  genepos = read.table("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/gencode_genes.txt", stringsAsFactors = FALSE)
+  # genepos = read.table("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/gencode_genes.txt", stringsAsFactors = FALSE)
+  genepos = read.table("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/genepos.txt", stringsAsFactors = FALSE, header=T)
   snpspos <- snpspos[-which(snpspos$SNP %in% snps.discarded),]
   # Only associations significant at this level will be saved.
   pvOutputThreshold_tra = 1e-5
   pvOutputThreshold_cis = 0.05
   
   # Distance for local gene-SNP pairs
-  cisDist = 1e6
+  cisDist = 5e5 # 500 change this
 
   ### Prepare matrix eqtl
   ## Settings
   # Set the model used for eqtl mapping.
-  useModel = modelLINEAR_CROSS; # modelANOVA, modelLINEAR, or modelLINEAR_CROSS
-  useCase = "all" # timepoints, all
+  useModel = modelLINEAR; # modelANOVA, modelLINEAR, or modelLINEAR_CROSS
+  useCase = "timepoints" # timepoints, all
   
   # Change covariates to character() for no covariates.
   if (useCase == 'all') {
@@ -48,7 +49,7 @@ ctQTL <- function () {
   # Empty variable for cis- trans- qtls.
   transqtls <- NULL
   cisqtls <- NULL
-  
+  print(dim(snps.t))
   if (useCase == 'timepoints') {
     # Load genotype data.
     snps.sd = SlicedData$new()
@@ -63,8 +64,8 @@ ctQTL <- function () {
     # different timepoints measured in the gene expression data.
     time_intervals <- list(t0 = seq(1,dim(GE)[2],4),
                            t10 = seq(2,dim(GE)[2],4),
-                           t30 = seq(3,dim(GE)[2],4),
-                           t180 = seq(4,dim(GE)[2],4))
+                           t180 = seq(3,dim(GE)[2],4),
+                           t30 = seq(4,dim(GE)[2],4))
     
     # Change gene expression data to 4 segments for the time intervals.
     for (interval in time_intervals) {
@@ -195,21 +196,17 @@ mapping <- function(pattern_name.cis=pattern_name.cis, pattern_name.trans=patter
   if (useCase == 'timepoints') {
     # Also save as Rdata file for Trans eQTLs.
     destination=paste("~/Dropbox/Erik Schutte Internship 2016/Results/Trans/GENCODE/",names(time_intervals[interval])[1],"/gsTcell_",names(time_intervals[interval])[1],"_trans-eQTLs_0.05.RData",sep="")
-    save.image(file=destination)
     save(trans, file=destination)
     
     # Also save as Rdata file for cis eQTLs.
     destination=paste("~/Dropbox/Erik Schutte Internship 2016/Results/Cis/GENCODE/",names(time_intervals[interval])[1],"/gsTcell_",names(time_intervals[interval])[1],"_cis-eQTLs_0.05.RData",sep="")
-    save.image(file=destination)
     save(cis, file=destination)
     
   } else {
     destination=paste("~/Dropbox/Erik Schutte Internship 2016/Results/Cis/GENCODE/gsTcell_all_timepoints_interactive-cis-eQTLs_0.05.RData",sep="")
-    save.image(file=destination)
     save(cis, file=destination)
     
     destination=paste("~/Dropbox/Erik Schutte Internship 2016/Results/Cis/GENCODE/gsTcell_all_timepoints_interactive-trans-eQTLs_0.05.RData",sep="")
-    save.image(file=destination)
     save(trans, file=destination)
   }
 }

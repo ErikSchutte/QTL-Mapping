@@ -5,7 +5,7 @@
 
 # Let the user know the packages are loaded
 cat("Loading packages, if not present, they are installed.\n\nThis may take a while.\n\n")
-
+setwd("~/Dropbox/Erik Schutte Internship 2016/Code/QTL-Mapping/mapping") # set path to install from github
 # Path for local source files.
 path = file.path(getwd(),"source/")
 

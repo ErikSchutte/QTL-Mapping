@@ -54,7 +54,7 @@ ll <- lapply(eQTLs.df.list, function(eqtl.df) {
   apply(eqtl.df, 1, function(eqtl) {
     # Set each row as a dataframe instead of a vector
     eqtl <- data.frame(t(eqtl))
-    eqtl <- eQTLs.df.list[[1]][1,]
+    # eqtl <- eQTLs.df.list[[1]][1,]
     # Position current gene in the expression file.
     gene.expression.all.samples <- gene.expr[ which( eqtl$gene == rownames(gene.expr) ), ]
 

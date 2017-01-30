@@ -16,7 +16,7 @@ useModel = modelLINEAR
 pvOutputThreshold_cis = 0.05
 
 # Distance for local gene-SNP pairs
-cisDist = 1e5
+cisDist = 5e5
 
 # Set covariates
 covariates_file_name = covariates
@@ -83,3 +83,5 @@ me = Matrix_eQTL_main(
 
 # Results.
 cat('Analysis done in: ', me$time.in.sec, ' seconds', '\n\n\n')
+
+save(me, file="~/Dropbox/Erik Schutte Internship 2016/Data/Leafcutter/intron_splice_sqtl_mapping.csv")

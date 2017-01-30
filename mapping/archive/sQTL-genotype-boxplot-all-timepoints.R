@@ -1,16 +1,17 @@
 library(reshape2)
 library(ggplot2)
 # Load sqtls mapped with Matrix eQTL.
-sqtls <- read.table("~/Dropbox/Erik Schutte Internship 2016/Data/Leafcutter/intron_splice_sqtl_mapping.csv",
-           header=T, stringsAsFactors = F)
+load("~/Dropbox/Erik Schutte Internship 2016/Data/Leafcutter/intron_splice_sqtl_mapping.csv")
+sqtls <- me$all$eqtls
 
 load("~/Dropbox/Erik Schutte Internship 2016/Data/Leafcutter/ordered_sqtl_data.Rdata")
-
+genepos <- read.table("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/genepos.txt", header=T, stringsAsFactors = F)
+test.bed <- data.frame(name=c(rep(LETTERS[1:4], 1)),chr=c(rep(1:4, 1)),start=c(100,130,160,190),end=c(180,218,230,270))
+test.sqtl <- data.frame(snp=c("rs1","rs2","rs3","rs4"),gene=c("1:113:170:1","2:180:218:2","3:240:260:3","4:220:236:4"))
 source("~/Dropbox/Erik Schutte Internship 2016/Code/QTL-Mapping/mapping/source/prepare_df_sqtls.R")
-sqtls.ma <- lapply(list(sqtls), prepare_df_sqtls)[[1]]
-
-sqtls.tmp <- sqtls.ma[1:15,]
-ll <- apply(sqtls.tmp, 1, function(sqtl) {
+sqtls.ma <- lapply(list(sqtls[1:15,]), prepare_df_sqtls)[[1]]
+write.table(sqtls.ma, "~/Dropbox/Erik Schutte Internship 2016/Images/sQTLs/sqtls_top15.tsv",sep="\t",quote=F)
+ll <- apply(sqtls.ma, 1, function(sqtl) {
     # Set each row as a dataframe instead of a vector
     sqtl <- data.frame(t(sqtl))
     # sqtl <- sqtls.ma[1,]
@@ -157,11 +158,11 @@ ll <- apply(sqtls.tmp, 1, function(sqtl) {
     
     cluster=gsub(as.character(sqtl$gene), pattern=":", replacement="_")
     ggsave(filename=paste("~/Dropbox/Erik\ Schutte\ Internship\ 2016/Images/sQTLs/",cluster,"_",sqtl$snps,"_",sqtl$minor_major,".pdf",sep=""),
-           plot=last_plot(), device = "pdf")
+    plot=last_plot(), device = "pdf")
 
-    
+
     pdf(paste("~/Dropbox/Erik\ Schutte\ Internship\ 2016/Images/sQTLs/",cluster,"_",sqtl$snps,"_",sqtl$minor_major,"_","correlation.pdf",sep=""),
-        width=7, height=5)
+    width=7, height=5)
     par(mfrow=c(2,2))
     geno <- data.frame(snps[,which(colnames(snps) == sqtl$snps)])
     timepoints <- c("t0", "t10", "t30", "t180")

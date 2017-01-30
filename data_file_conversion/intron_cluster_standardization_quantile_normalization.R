@@ -34,11 +34,15 @@ norm_intron_counts <- normalize.quantiles(scaled_across_indv, copy = T)
 colnames(norm_intron_counts) <- colnames(intron_counts) # Set column names from intron_counts
 rownames(norm_intron_counts) <- rownames(intron_counts) # Set row names from intron_counts
 
-plot(density(norm_intron_counts[2,]))
+par(mfrow=c(1,1))
+hist(as.matrix(intron_counts), main="Pre Scaling")
+hist(as.matrix(intron_counts[2,]), main="Pre scaling",xlab="Expression",xlim=c(-3,10))
+boxplot(as.matrix(intron_counts[2,]))
+plot(density(scaled_across_indv[2,]), main="Post Scaling")
+hist(scaled_across_indv[2,], main="Post Scaling",xlab="Scaled expression values",xlim=c(-3,10))
+plot(density(norm_intron_counts[2,]), main="Post Quantile Normalization")
+hist(norm_intron_counts[2,], main="Post Quantile Normalization Histogram",xlab="Normalized expression values",xlim=c(-3,10))
 boxplot(norm_intron_counts[1:5000,])
-
-
-
 pca <- prcomp(t(norm_intron_counts))
 
 plot(pca$x)

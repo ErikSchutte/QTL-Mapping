@@ -1,3 +1,6 @@
+## Library
+library(gtools)
+
 ## Data preparation.
 data_prep <- function () {
   ### Data-preparation
@@ -8,9 +11,20 @@ data_prep <- function () {
     cat("Transforming SNPs\n\n")
   }
   
-  # For readability change the matrix name and remove Norway data.
+  ##### Load input data ####
+  load("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/clones_CeD_genotypes_noDuplicates.Rdata")
+  load("~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/expr_vst_condition_patient_rmBatch_88samples.Rdata")
+  
+  ##### Transform names ####
+  ## Set data to shorter values.
+  ge <- expr.vst.rmBatch
+  snps <- mergedGenotypes_clones2
+  
+  ## For readability change the matrix name and remove Norway data.
+  # Norway data is excluded from our eqtl analyis.
   snps <- snps[-(23:27),]
   
+  ## Add a sample that hasn't been added yet.
   # There is a sample that is not included in the genotype data but has the same genotype as TCC-01-2 so we add that.
   tmp.df <- t(data.frame("TCC-01-3"=snps[15,]))
   snps <- rbind(snps, tmp.df)
@@ -18,29 +32,24 @@ data_prep <- function () {
   # Set the rowname for the new sample to TCC-01-3 instead of TCC.01.3.
   rownames(snps)[which(rownames(snps) == "TCC.01.3")] <- "TCC-01-3"
   
-  # Add a row to the data frame with MAF where the minor allele frequencie will be stored.
+  ## Order Names.
+  # Order the sample names.
+  snps <- snps[order(rownames(snps)),]
+  
+  # Add a row to the data frame with MAF where the alleles will be stored.
   tmp.df <- t(data.frame(MAF=rep("",length(colnames(snps)))))
-  snps.genotype <- rbind(snps, tmp.df)
-  
-  # Keeps track of the snps that are causing noise in the data and are not representable.
-  snps.discarded <- c()
-  snps.discarded.pos <- c()
-  snps.discarded.counter <- 0
-  
-  # Gencode annotated raw counts normalized with VST. However, one sample is missing, remove the entire sample for the time being.
-  GE <- GE[,-grep("batch\\d+_TCC-17",colnames(GE))]
+  snps.genotype <- snps # Copy of snps that won't be changed to frequencies.
   
   # Change the sample names to the corrosponding format for the Gene Expression file.
-  if ( length(grep("\\.",colnames((GE))) != 0) ) {
-    colnames(GE) <- gsub("\\.", "_", colnames(GE))
-  } else if ( length(grep("\\-",colnames((GE))) != 0) ) {
-    colnames(GE) <- gsub("\\-", "_", colnames(GE))
+  if ( length(grep("\\.",colnames((ge))) != 0) ) {
+    colnames(ge) <- gsub("\\.", "_", colnames(ge))
+  } else if ( length(grep("\\-",colnames((ge))) != 0) ) {
+    colnames(ge) <- gsub("\\-", "_", colnames(ge))
   } 
-  
-  if ( length( grep("\\d+_T", colnames(GE)) != 0 ) ) {
-    colnames(GE) <- gsub("_T", "__T", colnames(GE))
-    colnames(GE) <- gsub("_t", "__t", colnames(GE))
-  }
+  # Change column names to match sample names.
+  colnames(ge) <- gsub("batch[0-9]+__", "", colnames(ge))
+  ge <- ge[,mixedsort(colnames(ge))]
+  colnames(ge) <- gsub("__t[0-9]+", "", colnames(ge))
   
   # Change the sample names to the corrosponding format for the Genotype file.
   if ( length(grep("-",rownames(snps)) != 0) ) {
@@ -50,54 +59,24 @@ data_prep <- function () {
   
   # Remove those samples that don't occur in the gene expression data. 
   # “TCC-09-1", ”TCC-08-1”, "TCC-21-01" and "TCC-20-01".
-  indices.snps <- c()
-  snps.old <- snps
-  for (colname in colnames(GE)){
-    # Save indices, where the rownames from the gene expression co-exist in the 
-    # genotype matrix.
-    strs <- strsplit(colname,"__")
-    indices.snps <- c(indices.snps,grep(strs[[1]][2],rownames(snps)))
-  }
-  # Re-arange data frame.
-  snps <- snps[unique(indices.snps),]
-  snps.genotype <- snps.genotype[unique(indices.snps),]
+  com.samples <- intersect(rownames(snps), colnames(ge))
   
-  # VERBOSE - Show sample difference Genotype versus Expression.
-  if ( VERBOSE == TRUE ) {
-    cat("Samples that are NOT in the VST but ARE in the genotype file:\n")
-    print(rownames(snps.old[which(!rownames(snps.old) %in% rownames(snps) ),]) )
-    cat("Samples genotype file:\n")
-    print(rownames(snps))
-    cat("Number of samples: \n")
-    print(length(rownames(snps)))
-  }
+  ## Re-arange data frame.
+  # If we re-arrange without saving the ordering for the samples we lose it by using the indices.
+  sample.order <- rownames(snps) # sample order
+  snps <- snps[com.samples,] 
+  snps.genotype <- snps.genotype[com.samples,]
+  snps.genotype <- rbind(snps.genotype, tmp.df) # after re-arangement bind alleles to genotypes.
   
   ## Order the gene expression data
-  # Save the indices for the swap.
-  indices.ge <- c()
-  ge.old <- GE
-  # For every rowname in colnames of the genotype samples.
-  for (rowname in rownames(snps)) {
-    # Save indices, where the rownames from the genotype matrix co-exist in the 
-    # gene expression matrix.
-    indices.ge <- c(indices.ge,  grep(rowname, colnames(GE)))
-  }
-  # Re-arange data frame
-  GE <- GE[,indices.ge]
+  ge <- ge[,which(colnames(ge)%in%com.samples)]
   
-  # VERBOSE - Show sample difference Genotype versus Expression.
-  if ( VERBOSE == TRUE ) {
-    cat("\nSamples that are NOT in the genotype file but ARE in the VST file:\n")
-    print(colnames(ge.old[,which(!colnames(ge.old) %in% colnames(GE))] ) )
-    cat("Samples VST file:\n")
-    print(colnames(GE))
-    cat("Number of samples: \n")
-    print(length(colnames(GE)))
-  }
-  
-  # Bind the MAF back to the snps.
-  snps <- rbind(snps, tmp.df)
-  
+  ##### Preparation ####
+  ## Convert genotypes to 0, 1 and 2. 0 ref/ref, 1 ref/mut and 2 mut/mut.
+  # Keeps track of the snps that are causing noise in the data and are not representable.
+  snps.discarded <- c()
+  snps.discarded.pos <- c()
+  snps.discarded.counter <- 0
   # For every column in the genotype data.
   for (i in 1:ncol(snps)) {
     
@@ -107,8 +86,8 @@ data_prep <- function () {
       cat("#",i,"- current column: ",colnames(snps)[i],"\n")
     }
     # Save genotype and genotype count for each column.
-    alleles.all <- table(snps[,i])[-1]
-
+    alleles.all <- table(snps[,i])
+    
     # A minimum of 3 samples for a genotype is required to effectively calculate correlation.
     # Therefore we are removing the rows where this is not the case.
     if ( length(alleles.all) < 3 & min(alleles.all) < 2) {
@@ -119,9 +98,8 @@ data_prep <- function () {
       # Store the discarded SNP for later review.
       snps.discarded <- c(snps.discarded, colnames(snps)[i])
       snps.discarded.counter <- snps.discarded.counter + 1
-      
     }
-
+    
     # List with all the major, minor, and heterozygote genotypes and their respecitve counts.
     allele.list <- list(major <- list(genotype =NULL,count=0),
                         minor <- list(genotype =NULL,count=0),
@@ -233,7 +211,7 @@ data_prep <- function () {
     }
     
     # For every row in the genotype data.
-    for (j in 1:nrow(snps) ) {
+    for (j in 1:nrow(snps.genotype) ) {
       
       # First we want to create a dict that takes the inverse of the MAJOR alleles we put there,
       # since we do not save all the minor alleles.
@@ -241,8 +219,8 @@ data_prep <- function () {
       
       # If J is smaller than the maximum lengt of rows, e.g. all the samples minus the last row
       # where the MAF will be stored.
-      if (j < (nrow(snps) ) ) {
-        
+      if (j < (nrow(snps.genotype) ) ) {
+        cat("Current is: ",j,"\n")
         # Check the current snp agains the determined major, minor and heterozygote genotypes,
         # and determine the allele frequency.
         snp.freq <- change_allele_to_frequencies(snps[j,i],allele.list)
@@ -266,7 +244,7 @@ data_prep <- function () {
       # J is equal to the length of rows for the data frame snps. meaning it is hte last row that will contain
       # the MAF.
       else {
-        
+        cat("Other is: ",j,"\n")
         # We don't always have the minor allele, so instead we look at the major and heterozygous genotypes.
         # E.g. all 22 samples have the following genotyeps for snp X, TT (19x) CT (3x) CC(0x).
         # Because we can't count CC we have no genotype CC and thus have to 'create' it.
@@ -303,32 +281,15 @@ data_prep <- function () {
         
         # Save the genotypes in the data frame as MINOR / MAJOR.
         alleles <- paste(minor.allele, "_", major.allele[1], sep="")
-        snps[j,i] <- alleles
+        print(alleles)
+        snps.genotype[j,i] <- alleles
       }
     }
-  }
-  # Save the MAF genotype in a separate data.frame.
-  snps.maf <- data.frame(snps[22,]) # 22 for now with gencode, else 23.
-  
-  # Set the colname for the new data frame.
-  colnames(snps.maf) <- "MAF-Genotype"
-  
-  # Save it globally so I can acces it anywhere.
-  global("MAFGenotype",snps.maf)
-  
-  # Remove from the original data frame so it won't conflict.
-  snps <- snps[-22,] # 22 for now with gencode, else 23.
-  
-  # Verbose.
-  if ( VERBOSE == TRUE ) {
-    # Verbose - Print removing discarded SNPs
-    cat("\n\nRemoving discarded SNPs:\n")
   }
   
   # Remove discarded snps from data set.
   snps <- snps[,-snps.discarded.pos]
   snps.genotype <- snps.genotype[,-snps.discarded.pos]
-  snps.maf <- snps.maf[-snps.discarded.pos,]
   
   # Convert genotype matrix to numeric values for Matrix eQTL analaysis.
   suppressMessages(
@@ -338,86 +299,8 @@ data_prep <- function () {
   # Transfer the genotype matrix so that the columns 'align' with the gene expression matrix.
   snps.t <- t(snps)
   snps.genotype.t <- t(snps.genotype)
-  
-  # # Change the sample names to the corrosponding format for the Gene Expression file.
-  # if ( length(grep("\\.",colnames((GE))) != 0) ) {
-  #   colnames(GE) <- gsub("\\.", "_", colnames(GE))
-  # } else if ( length(grep("\\-",colnames((GE))) != 0) ) {
-  #   colnames(GE) <- gsub("\\-", "_", colnames(GE))
-  # }
-  # 
-  # # Change the sample names to the corrosponding format for the Genotype file.
-  # if ( length(grep("-",colnames((snps.t))) != 0) ) {
-  #   colnames(snps.t) <- gsub("\\-", "_", colnames(snps.t))
-  #   colnames(snps.genotype.t) <- gsub("\\-", "_", colnames(snps.genotype.t))
-  # }
-  # 
-  # # Remove those samples that don't occur in the gene expression data. 
-  # # “TCC-09-1" and ”TCC-08-1”.
-  # indices.snps <- c()
-  # snps.t.old <- snps.t
-  # for (colname in colnames(GE)){
-  #   # Save indices, where the colnames from the gene expression co-exist in the 
-  #   # genotype matrix.
-  #   strs <- strsplit(colname,"__")
-  #   indices.snps <- c(indices.snps,grep(strs[[1]][2],colnames(snps.t)))
-  # }
-  # # Re-arange data frame.
-  # snps.t <- snps.t[,unique(indices.snps)]
-  # snps.genotype.t <- snps.genotype.t[,unique(indices.snps)]
-  # 
-  # # VERBOSE - Show sample difference Genotype versus Expression.
-  # if ( VERBOSE == TRUE ) {
-  #   cat("Samples that are NOT in the VST but ARE in the genotype file:\n")
-  #   print(colnames(snps.t.old[,which(!colnames(snps.t.old) %in% colnames(snps.t) )]) )
-  #   cat("Samples genotype file:\n")
-  #   print(colnames(snps.t))
-  #   cat("Number of samples: \n")
-  #   print(length(colnames(snps.t)))
-  # }
-  
-  # Save data.
-  global("snps.t",snps.t)
-  
-  snps.genotype.t <- cbind.data.frame(snps.genotype.t, snps.maf)
-  global("snps.genotype.t",snps.genotype.t)
-  
-  # Store snps.genotype as a file.
-  write.table(snps.genotype.t, "~/Dropbox/Erik Schutte Internship 2016/Data/filtered-data/snps.genotype.t.tsv",row.names=T,
-              quote = F)
-  write.table(snps.t, "~/Dropbox/Erik Schutte Internship 2016/Data/filtered-data/snps.t.tsv",row.names=T,
-              quote = F)
-  
-  # ## Order the gene expression data
-  # # Save the indices for the swap.
-  # indices.ge <- c()
-  # ge.old <- GE
-  # # For every colname in colnames of the genotype samples.
-  # for (colname in colnames(snps.t)) {
-  #   # Save indices, where the colnames from the genotype matrix co-exist in the 
-  #   # gene expression matrix.
-  #   indices.ge <- c(indices.ge,  grep(colname, colnames(GE)))
-  # }
-  # # Re-arange data frame
-  # GE <- GE[,indices.ge]
-  # 
-  # # VERBOSE - Show sample difference Genotype versus Expression.
-  # if ( VERBOSE == TRUE ) {
-  #   cat("\nSamples that are NOT in the genotype file but ARE in the VST file:\n")
-  #   print(colnames(ge.old[,which(!colnames(ge.old) %in% colnames(GE))] ) )
-  #   cat("Samples VST file:\n")
-  #   print(colnames(GE))
-  #   cat("Number of samples: \n")
-  #   print(length(colnames(GE)))
-  # }
-  
-  # Save data.
-  global("GE",GE)
-  global("snps.discarded",snps.discarded)
-  ### User information
-  ## Prints information to the command line for the user.
-  # Shows the user how many SNPs are discarded and which ones.
-  cat("\nThe following SNPs were discarded due to lack of significance in occurence;\n\nSNP Names;\n")
-  for (snp.disc in snps.discarded) {cat(snp.disc,"\n")}
-  cat("\nTotal number of SNPs discarded;\n",snps.discarded.counter,"\n\n")
 }
+
+save(snps.t, file="~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/gsTcell_genotype_frequencies_transformed.Rdata")
+save(snps.genotype.t, file="~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/gsTcell_genotypes_transformed.Rdata")
+save(ge, file="~/Dropbox/Erik Schutte Internship 2016/Data/eQTL-data/gsTcell_gene_expr_vst_88samples.Rdata")
